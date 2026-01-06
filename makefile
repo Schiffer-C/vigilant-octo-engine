@@ -2,6 +2,7 @@
 ENGINE_DIR := engine
 WEB_DIR := web
 WASM_OUT := $(WEB_DIR)/src/wasm
+WASM_VERSION_FILE := $(WEB_DIR)/src/wasm_version.ts
 
 WASM_PACK := wasm-pack
 NPM := npm
@@ -26,6 +27,8 @@ wasm:
 		--target web \
 		--out-dir ../$(WASM_OUT) \
 		--out-name engine
+	@mkdir -p $(dir $(WASM_VERSION_FILE))
+	@echo "export const WASM_BUILD_ID = \"$$(date +%s%3N)\";" > $(WASM_VERSION_FILE) 
 
 .PHONY: dev
 dev: wasm
@@ -35,7 +38,7 @@ dev: wasm
 watch:
 	cd $(ENGINE_DIR) && cargo watch \
 		-w src -w Cargo.toml \
-		-s "$(WASM_PACK) build --target web --out-dir ../$(WASM_OUT) --out-name engine"
+		-s "$(WASM_PACK) build --target web --out-dir ../$(WASM_OUT) --out-name engine && echo 'export const WASM_BUILD_ID = \"'$$(date +%s%3N)'\";' > ../$(WASM_VERSION_FILE)"
 
 .PHONY: build
 build: wasm

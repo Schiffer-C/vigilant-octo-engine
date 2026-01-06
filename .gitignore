@@ -28,7 +28,7 @@ Cargo.lock
 
 # wasm-pack output (now inside web)
  /web/src/wasm/
-
+/web/src/wasm_version.ts
 
 # ----- Logs -----
 npm-debug.log*
