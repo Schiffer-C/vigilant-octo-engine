@@ -32,9 +32,19 @@ async function main() {
         game.prepare_render_buff();
 
         const len = game.buff_len();
+        const bgPtr = game.bg_rgb_buff_ptr();
+        const fgPtr = game.fg_rgb_buff_ptr();
+        const glyphPtr = game.glyph_buff_ptr();
+
+        console.log({ len, bgPtr, fgPtr, glyphPtr });
+
         const bg = new Uint32Array(memory.buffer, game.bg_rgb_buff_ptr(), len);
         const fg = new Uint32Array(memory.buffer, game.fg_rgb_buff_ptr(), len);
         const glyph = new Uint32Array(memory.buffer, game.glyph_buff_ptr(), len);
+
+        const center = Math.floor(viewW / 2) + Math.floor(viewH / 2) * viewW;
+        console.log("center glyph code:", glyph[center], "fg:", fg[center].toString(16));
+        console.log("center glyph code:", glyph[center], "bg:", bg[center].toString(16));
 
         for(let y = 0; y < viewH; y++) {
             for(let x = 0; x < viewW; x++) {

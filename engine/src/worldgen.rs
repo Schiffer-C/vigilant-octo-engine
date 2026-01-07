@@ -4,20 +4,6 @@ use crate::render::{RenderData, Rgb24};
 /// Enums and Structs
 /// -------------------------
 
-#[deprecated]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Tile {
-    Grass,
-    Water,
-    Rock
-}
-
-#[deprecated]
-impl Tile {
-    pub fn is_traversable(self) -> bool {
-        matches!(self, Tile::Grass)
-    }
-}
 
 // Biome decided at worldgen. Determines probability of other features appearing during later stages of worldgen (layer0)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -212,7 +198,7 @@ pub fn tile_at(seed: u32, x: i32, y: i32) -> WorldgenTile {
 
 pub fn biome_at(seed: u32, x: i32, y: i32) -> Biome {
     // TODO: Replace magic number(s) with config file
-    let cell_size = 96; 
+    let cell_size = 186; 
 
     let temp = value_noise_2d(seed, x, y, cell_size, 0xA1B2_C3D4);
     let humidity = value_noise_2d(seed, x, y, cell_size, 0x1A2B_3C4D);
@@ -233,9 +219,13 @@ pub fn biome_at(seed: u32, x: i32, y: i32) -> Biome {
 /// -------------------------
 
 pub fn resource_at(seed: u32, x: i32, y: i32, biome: Biome) -> ResourceLayer {
-    
-    let fluid_noise = value_noise_2d(seed, x, y, 48, 0xF00D_1234);
-    let node_noise  = value_noise_2d(seed, x, y, 32, 0xC0FF_EE77);
+    const SALT_WATER: u32  = 0xF00D_1234;
+
+    const SALT_IRON: u32   = 0xA11C_E001;
+    const SALT_COPPER: u32 = 0xC0FF_E002;
+    const SALT_COAL: u32   = 0xC0A1_E003;
+
+    let water_field = value_noise_2d(seed, x, y, 40, SALT_WATER);
 
     // 1) Fluids first (because they affect traversal).
     // Make water more common in some biomes.
@@ -247,34 +237,47 @@ pub fn resource_at(seed: u32, x: i32, y: i32, biome: Biome) -> ResourceLayer {
     };
 
     // Lower noise values become water blobs.
-    if fluid_noise < water_threshold {
+    if water_field < water_threshold {
         return ResourceLayer::Fluid(FluidType::Water);
     }
 
-    // 2) Nodes (mineable), only if not water.
-    // Use a "peak" test to create patches: require node_noise to be very high.
-    let node_threshold = match biome {
-        Biome::Desert => 0.865, // more nodes
-        Biome::Tundra => 0.955,
-        Biome::Plains => 0.950,
-        Biome::Forest => 0.955,
+    let node_cell = 24;
+
+    let iron_field   = value_noise_2d(seed, x, y, node_cell, SALT_IRON);
+    let copper_field = value_noise_2d(seed, x, y, node_cell, SALT_COPPER);
+    let coal_field   = value_noise_2d(seed, x, y, node_cell, SALT_COAL);
+
+    // Thresholds control rarity. Higher = rarer.
+    // You can also bias by biome by nudging thresholds.
+    let (iron_th, copper_th, coal_th) = match biome {
+        Biome::Desert => (0.875, 0.865, 0.870), // desert favors copper slightly
+        Biome::Tundra => (0.965, 0.975, 0.970), // tundra favors iron slightly
+        Biome::Forest => (0.970, 0.970, 0.965), // forest favors coal slightly
+        Biome::Plains => (0.970, 0.970, 0.970),
     };
 
-    if node_noise > node_threshold {
-        // Choose node type deterministically from a hash.
-        let pick = hash(seed, x, y, 0xBEEF_CAFE) % 100;
-        let node = match biome {
-            Biome::Desert => {
-                // Example bias: more copper/coal, less iron
-                if pick < 40 { ResourceType::Copper } else if pick < 80 { ResourceType::Coal } else { ResourceType::Iron }
-            }
-            Biome::Tundra => {
-                if pick < 55 { ResourceType::Iron } else if pick < 80 { ResourceType::Coal } else { ResourceType::Copper }
-            }
-            _ => {
-                if pick < 55 { ResourceType::Iron } else if pick < 80 { ResourceType::Copper } else { ResourceType::Coal }
-            }
-        };
+    let mut best: Option<(ResourceType, f32)> = None;
+
+    let iron_score = iron_field - iron_th;
+    if iron_score > 0.0 {
+        best = Some((ResourceType::Iron, iron_score));
+    }
+
+    let copper_score = copper_field - copper_th;
+    if copper_score > 0.0 {
+        if best.map_or(true, |(_, s)| copper_score > s) {
+            best = Some((ResourceType::Copper, copper_score));
+        }
+    }
+
+    let coal_score = coal_field - coal_th;
+    if coal_score > 0.0 {
+        if best.map_or(true, |(_, s)| coal_score > s) {
+            best = Some((ResourceType::Coal, coal_score));
+        }
+    }
+
+    if let Some((node, _score)) = best {
         return ResourceLayer::Resource(node);
     }
 
@@ -323,8 +326,6 @@ pub fn feature_at(seed: u32, x: i32, y: i32, biome: Biome, resource: ResourceLay
 #[cfg(test)]
 mod tests {
     use crate::worldgen::hash;
-
-    use super::*;
 
     #[test]
     fn deterministic() {

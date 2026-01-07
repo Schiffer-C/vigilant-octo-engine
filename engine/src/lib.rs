@@ -50,8 +50,13 @@ impl Game {
     }
 
     pub fn move_by(&mut self, dx: i32, dy: i32) {
-        self.px += dx;
-        self.py += dy;
+        let nx = self.px + dx;
+        let ny = self.py + dy;
+        let dest = tile_at(self.seed, nx, ny);
+        if dest.is_traversable() {
+            self.px = nx;
+            self.py = ny;
+        }
     }
 
     pub fn pos_x(&self) -> i32 {
@@ -113,7 +118,7 @@ impl Game {
     }
 
     pub fn fg_rgb_buff_ptr(&self) -> *const u32 {
-        self.bg_rgb_buff.as_ptr()
+        self.fg_rgb_buff.as_ptr()
     }
 
     pub fn glyph_buff_ptr(&self) -> *const u32 {
