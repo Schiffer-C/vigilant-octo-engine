@@ -1,7 +1,10 @@
+use crate::render::{RenderData, Rgb24};
+
 /// -------------------------
 /// Enums and Structs
 /// -------------------------
 
+#[deprecated]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Tile {
     Grass,
@@ -9,6 +12,7 @@ pub enum Tile {
     Rock
 }
 
+#[deprecated]
 impl Tile {
     pub fn is_traversable(self) -> bool {
         matches!(self, Tile::Grass)
@@ -24,12 +28,34 @@ pub enum Biome {
     Plains
 }
 
+impl Biome {
+    pub fn bg_color(self) -> Rgb24 {
+        match self {
+            Biome::Forest => 0x32a852, // #32a852
+            Biome::Desert => 0xdeecb6, // #deecb6
+            Biome::Tundra => 0xd9e7f0, // #d9e7f0
+            Biome::Plains => 0xd7ffe9 // #d7ffe9
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FluidType {
     Water,
     Lava,
     Oil,
     Acid
+}
+
+impl FluidType {
+    pub fn render_data(self) -> RenderData {
+        match self {
+            FluidType::Water => RenderData { color: 0x2A5CAA, glyph: '≈' }, // #2A5CAA
+            FluidType::Lava => RenderData { color: 0xec874c, glyph: '≈' }, // #ec874c
+            FluidType::Oil => RenderData { color: 0x0e1f3a, glyph: '≈' }, // #0e1f3a
+            FluidType::Acid => RenderData { color: 0x54fc2a, glyph: '≈' }, // #54fc2a
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,12 +66,34 @@ pub enum ResourceType {
     Crystal
 }
 
+impl ResourceType {
+    pub fn render_data(self) -> RenderData {
+        match self {
+            ResourceType::Iron   => RenderData { color: 0xB0B0B0, glyph: '⛏' }, // #B0B0B0
+            ResourceType::Copper => RenderData { color: 0xC07030, glyph: '⛏' }, // #C07030
+            ResourceType::Coal   => RenderData { color: 0x303030, glyph: '⛏' }, // #303030
+            ResourceType::Crystal   => RenderData { color: 0xf3d5ef, glyph: '⛏' }, // #f3d5ef
+        }
+    }
+}
+
 // Decided after the Biome in worldgen, decides if a fluid or resource node is present (layer1)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ResourceLayer {
     None,
     Fluid(FluidType),
     Resource(ResourceType)
+}
+
+impl ResourceLayer {
+    /// None means "draw nothing for layer1"
+    pub fn render_data(self) -> Option<RenderData> {
+        match self {
+            ResourceLayer::None => None,
+            ResourceLayer::Fluid(f) => Some(f.render_data()),
+            ResourceLayer::Resource(n) => Some(n.render_data()),
+        }
+    }
 }
 
 // Decided after the ResourceLayer in worldgen, decides if a feature is present (layer2)
