@@ -3,7 +3,7 @@ mod render;
 
 use wasm_bindgen::prelude::*;
 
-use crate::{render::Rgb24, worldgen::tile_at};
+use crate::{render::{RenderType, Rgb24}, worldgen::tile_at};
 
 #[wasm_bindgen]
 pub fn memory_access() -> JsValue {
@@ -92,8 +92,15 @@ impl Game {
 
                 // TODO: Add feature layer rendering
                 if let Some(rd) = tile.resource_layer.render_data() {
-                    glyph_code = rd.glyph_u32();
-                    glyph_color = rd.color;
+                    match rd {
+                        RenderType::Static { glyph, color } => {
+                            glyph_code = glyph as u32;
+                            glyph_color = color;
+                        }
+                        _ => {
+                            // Not implemented yet
+                        }
+                    }
                 }
 
                 self.fg_rgb_buff[idx] = glyph_color;

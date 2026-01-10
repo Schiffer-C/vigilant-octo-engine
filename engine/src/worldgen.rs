@@ -1,4 +1,4 @@
-use crate::render::{RenderData, Rgb24};
+use crate::render::{ASSEMBLER_ID, RenderType, Rgb24};
 
 /// -------------------------
 /// Enums and Structs
@@ -33,13 +33,15 @@ pub enum FluidType {
     Acid
 }
 
+
+
 impl FluidType {
-    pub fn render_data(self) -> RenderData {
+    pub fn render_data(self) -> RenderType {
         match self {
-            FluidType::Water => RenderData { color: 0x2A5CAA, glyph: '≈' }, // #2A5CAA
-            FluidType::Lava => RenderData { color: 0xec874c, glyph: '≈' }, // #ec874c
-            FluidType::Oil => RenderData { color: 0x0e1f3a, glyph: '≈' }, // #0e1f3a
-            FluidType::Acid => RenderData { color: 0x54fc2a, glyph: '≈' }, // #54fc2a
+            FluidType::Water => RenderType::Static { glyph: '≈', color: 0x2A5CAA }, // #2A5CAA
+            FluidType::Lava => RenderType::Static { glyph: '≈', color: 0xec874c }, // #ec874c
+            FluidType::Oil => RenderType::Static { glyph: '≈', color: 0x0e1f3a }, // #0e1f3a
+            FluidType::Acid => RenderType::Static { glyph: '≈', color: 0x54fc2a }, // #54fc2a
         }
     }
 }
@@ -53,12 +55,12 @@ pub enum ResourceType {
 }
 
 impl ResourceType {
-    pub fn render_data(self) -> RenderData {
+    pub fn render_data(self) -> RenderType {
         match self {
-            ResourceType::Iron   => RenderData { color: 0xB0B0B0, glyph: '⛏' }, // #B0B0B0
-            ResourceType::Copper => RenderData { color: 0xC07030, glyph: '⛏' }, // #C07030
-            ResourceType::Coal   => RenderData { color: 0x303030, glyph: '⛏' }, // #303030
-            ResourceType::Crystal   => RenderData { color: 0xf3d5ef, glyph: '⛏' }, // #f3d5ef
+            ResourceType::Iron   => RenderType::Static { glyph: '⛏', color: 0xB0B0B0 }, // #B0B0B0
+            ResourceType::Copper => RenderType::Static { glyph: '⛏', color: 0xC07030 }, // #C07030
+            ResourceType::Coal   => RenderType::Static { glyph: '⛏', color: 0x303030 }, // #303030
+            ResourceType::Crystal   => RenderType::Static { glyph: '⛏', color: 0xf3d5ef }, // #f3d5ef
         }
     }
 }
@@ -73,7 +75,7 @@ pub enum ResourceLayer {
 
 impl ResourceLayer {
     /// None means "draw nothing for layer1"
-    pub fn render_data(self) -> Option<RenderData> {
+    pub fn render_data(self) -> Option<RenderType> {
         match self {
             ResourceLayer::None => None,
             ResourceLayer::Fluid(f) => Some(f.render_data()),
@@ -87,8 +89,21 @@ impl ResourceLayer {
 pub enum FeatureLayer {
     None,
     Tree,
-    Rock
+    Rock,
+    Assembler
 }
+
+// This is wrong and should be implemented again later
+impl FeatureLayer {
+    pub fn render_data(self) -> Option<RenderType> {
+        match self {
+            FeatureLayer::None => None,
+            FeatureLayer::Assembler => Some(RenderType::SpriteCell { sprite_id: ASSEMBLER_ID, local_x: 0, local_y: 0 }),
+            _ => None
+        }
+    }
+}
+
 
 // Struct containing worldgen related tile data
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

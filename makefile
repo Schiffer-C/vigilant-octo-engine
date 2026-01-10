@@ -26,9 +26,7 @@ wasm:
 	cd $(ENGINE_DIR) && $(WASM_PACK) build \
 		--target web \
 		--out-dir ../$(WASM_OUT) \
-		--out-name engine
-	@mkdir -p $(dir $(WASM_VERSION_FILE))
-	@echo "export const WASM_BUILD_ID = \"$$(date +%s%3N)\";" > $(WASM_VERSION_FILE) 
+		--out-name engine 
 
 .PHONY: dev
 dev: wasm
